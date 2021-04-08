@@ -1,0 +1,2 @@
+E:\PT\ProgrammingTests\CesiumProblem\Debug\CesiumProblem.exe
+E:\PT\ProgrammingTests\CesiumProblem\Debug\CesiumProblem.pdb
