@@ -108,14 +108,14 @@ void CopyDataFromBufferToArray( unsigned char array[numRows][numColumns] , const
 float GetSurfaceLength( unsigned char array[ numRows ][ numColumns ] , int startPixelCoordX , int startPixelCoordY , int endPixelCoordX , int endPixelCoordY )
 {
 	float totalLength = 0.f;
-	float horizontalLength = 0.f;
-	float verticalLength = 0.f;
+	float totalHorizontalLength = 0.f;
+	
 
 	Vec2 startPosition = Vec2( ( float ) startPixelCoordX , ( float ) startPixelCoordY );
 	Vec2 endPosition = Vec2( ( float ) endPixelCoordX , ( float ) endPixelCoordY );
 
 	Vec2 horizontalVec = endPosition - startPosition;
-	horizontalLength = horizontalVec.GetLength() * lengthPerUnit;
+	totalHorizontalLength = horizontalVec.GetLength() * lengthPerUnit;
 
 	Vec2 direction = horizontalVec.GetNormalized();
 	float distaceToCoverForVerticalLength = horizontalVec.GetLength();
@@ -135,14 +135,24 @@ float GetSurfaceLength( unsigned char array[ numRows ][ numColumns ] , int start
 		int currentPositionY = ( int ) currentPosition.y;
 
 		unsigned int difference = abs( array[ currentPositionX ][ currentPositionY ] - array[ previousPostionX ][ previousPostionY ] );
-		verticalLength += difference * heightPerUnit;
+		float verticalLength = (float)(difference * heightPerUnit);
+		float horizontalLength = (currentPosition-previousPosition).GetLength() * lengthPerUnit;
+		totalLength += sqrt( ( horizontalLength * horizontalLength ) + ( verticalLength * verticalLength ) );
 
 		previousPosition = currentPosition;
-		currentPosition = previousPosition + ( direction * stepSize );
-		distanceCovered += ( currentPosition - previousPosition ).GetLength();
+		if ( distanceCovered + ( previousPosition + ( direction * stepSize ) ).GetLength() > totalHorizontalLength )
+		{
+			currentPosition = previousPosition + ( direction * ( totalHorizontalLength - distanceCovered ) );
+			distanceCovered += ( totalHorizontalLength - distanceCovered );
+		}
+		else
+		{
+			currentPosition = previousPosition + ( direction * stepSize );
+			distanceCovered += ( currentPosition - previousPosition ).GetLength();
+		}
+
 	}
 
-	totalLength = horizontalLength + verticalLength;
 	return totalLength;
 }
 
@@ -201,10 +211,10 @@ int main()
 	
 	CopyDataFromBufferToArray( postEruptionData , postEruptionBuffer );
 
-	int startPixelCoordX;
-	int startPixelCoordY;
-	int endPixelCoordX;
-	int endPixelCoordY;
+	int startPixelCoordX = -1;
+	int startPixelCoordY = -1;
+	int endPixelCoordX = -1;
+	int endPixelCoordY = -1;
 
 	std::cout << "Enter the start pixel coordinates" << std::endl;
 	std::cin >> startPixelCoordX >> startPixelCoordY;
@@ -215,10 +225,10 @@ int main()
 	float preEruptionSurfaceLength = GetSurfaceLength( preEruptionData , startPixelCoordX , startPixelCoordY , endPixelCoordX , endPixelCoordY );
 	float postEruptionSurfaceLength = GetSurfaceLength( postEruptionData , startPixelCoordX , startPixelCoordY , endPixelCoordX , endPixelCoordY );
 
-	printf( "The pre eruption surfaceLenght is %f meters \n",preEruptionSurfaceLength);
-	printf( "The post eruption surfaceLength is %f meters \n" , postEruptionSurfaceLength );
+	printf( "The pre eruption surface lenght is %f meters \n",preEruptionSurfaceLength);
+	printf( "The post eruption surface length is %f meters \n" , postEruptionSurfaceLength );
 	printf( "The difference is %f meters \n" , postEruptionSurfaceLength - preEruptionSurfaceLength );
-	
+
 	return 0;
 }
 
