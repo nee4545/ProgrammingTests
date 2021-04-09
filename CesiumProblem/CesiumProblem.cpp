@@ -74,19 +74,19 @@ void* FileReadToBuffer( std::string const& filename , size_t* outSize )
 	}
 
 	fseek( fp , 0 , SEEK_END );
-	long file_size = ftell( fp );
+	long fileSize = ftell( fp );
 
-	unsigned char* buffer = new unsigned char[ file_size + 1 ];
+	unsigned char* buffer = new unsigned char[ fileSize + 1 ];
 	if ( buffer != nullptr )
 	{
 		fseek( fp , 0 , SEEK_SET );
-		size_t bytes_read = fread( buffer , 1 , ( size_t ) file_size + 1 , fp );
-		buffer[ bytes_read ] = NULL;
+		size_t bytesRead = fread( buffer , 1 , ( size_t ) fileSize + 1 , fp );
+		buffer[ bytesRead ] = NULL;
 	}
 
 	if ( outSize != nullptr )
 	{
-		*outSize = ( size_t ) file_size;
+		*outSize = ( size_t ) fileSize;
 	}
 
 	fclose( fp );
