@@ -112,16 +112,14 @@ void CopyDataFromBufferToArray( unsigned char array[numRows][numColumns] , const
 float GetSurfaceLength( unsigned char array[ numRows ][ numColumns ] , int startPixelCoordX , int startPixelCoordY , int endPixelCoordX , int endPixelCoordY )
 {
 	float totalLength = 0.f;
-	float totalHorizontalLength = 0.f;
 	
 	Vec2 startPosition = Vec2( ( float ) startPixelCoordX , ( float ) startPixelCoordY );
 	Vec2 endPosition = Vec2( ( float ) endPixelCoordX , ( float ) endPixelCoordY );
 
-	Vec2 horizontalVec = endPosition - startPosition;
-	totalHorizontalLength = horizontalVec.GetLength() * lengthPerUnit;
+	Vec2 distanceVec = endPosition - startPosition;
 
-	Vec2 direction = horizontalVec.GetNormalized();
-	float distaceToCover = horizontalVec.GetLength();
+	Vec2 direction = distanceVec.GetNormalized();
+	float distaceToCover = distanceVec.GetLength();
 	float distanceCovered = 0.f;
 	float stepSize = 0.1f;
 
@@ -153,13 +151,12 @@ float GetSurfaceLength( unsigned char array[ numRows ][ numColumns ] , int start
 		if ( distanceCovered + (  direction * stepSize ).GetLength() > distaceToCover )
 		{
 			currentPosition = previousPosition + ( direction * ( distaceToCover - distanceCovered ) );
-			distanceCovered += ( distaceToCover - distanceCovered );
 		}
 		else
 		{
 			currentPosition = previousPosition + ( direction * stepSize );
-			distanceCovered += ( currentPosition - previousPosition ).GetLength();
 		}
+		distanceCovered += ( currentPosition - previousPosition ).GetLength();
 
 	}
 
