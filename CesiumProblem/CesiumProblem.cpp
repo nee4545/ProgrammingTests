@@ -7,6 +7,7 @@ constexpr int heightPerUnit = 11;
 constexpr int numRows = 512;
 constexpr int numColumns = 512;
 
+// A 2D vector struct used for distance calculation and directions
 struct Vec2
 {
 	float x = 0.f;
@@ -47,10 +48,10 @@ struct Vec2
 
 	Vec2 GetNormalized() const
 	{
-		float theta = atan2(y,x);
-		float tempX = cos(theta);
-		float tempY = sin(theta);
-		return(Vec2(tempX,tempY));
+		float theta = atan2( y , x );
+		float tempX = cos( theta );
+		float tempY = sin( theta );
+		return( Vec2( tempX , tempY ) );
 	}
 
 	float GetLength() const
@@ -60,6 +61,8 @@ struct Vec2
 };
 
 
+// Reads a file into a buffer and returns it along with the size of the file that is read
+// Returns nullptr if anything goes wrong
 void* FileReadToBuffer( std::string const& filename , size_t* outSize )
 {
 	FILE* fp = nullptr;
@@ -91,6 +94,7 @@ void* FileReadToBuffer( std::string const& filename , size_t* outSize )
 	return buffer;
 }
 
+//Put the height values from the file that is read into a buffer
 void CopyDataFromBufferToArray( unsigned char array[numRows][numColumns] , const void* buffer )
 {
 	unsigned char* dataPtr = ( unsigned char* ) buffer;
@@ -110,7 +114,6 @@ float GetSurfaceLength( unsigned char array[ numRows ][ numColumns ] , int start
 	float totalLength = 0.f;
 	float totalHorizontalLength = 0.f;
 	
-
 	Vec2 startPosition = Vec2( ( float ) startPixelCoordX , ( float ) startPixelCoordY );
 	Vec2 endPosition = Vec2( ( float ) endPixelCoordX , ( float ) endPixelCoordY );
 
@@ -118,15 +121,15 @@ float GetSurfaceLength( unsigned char array[ numRows ][ numColumns ] , int start
 	totalHorizontalLength = horizontalVec.GetLength() * lengthPerUnit;
 
 	Vec2 direction = horizontalVec.GetNormalized();
-	float distaceToCoverForVerticalLength = horizontalVec.GetLength();
+	float distaceToCover = horizontalVec.GetLength();
 	float distanceCovered = 0.f;
-	float stepSize = 1.f;
+	float stepSize = 0.1f;
 
 	Vec2 previousPosition = startPosition;
 	Vec2 currentPosition = previousPosition + ( direction * stepSize );
 	distanceCovered += ( currentPosition - previousPosition ).GetLength();
 	
-	while ( distanceCovered <= distaceToCoverForVerticalLength )
+	while ( true )
 	{
 		int previousPostionX = ( int ) previousPosition.x;
 		int previousPostionY = ( int ) previousPosition.y;
@@ -135,15 +138,22 @@ float GetSurfaceLength( unsigned char array[ numRows ][ numColumns ] , int start
 		int currentPositionY = ( int ) currentPosition.y;
 
 		unsigned int difference = abs( array[ currentPositionX ][ currentPositionY ] - array[ previousPostionX ][ previousPostionY ] );
-		float verticalLength = (float)(difference * heightPerUnit);
+		float verticalLength = (float)(difference * heightPerUnit * stepSize);
 		float horizontalLength = (currentPosition-previousPosition).GetLength() * lengthPerUnit;
+
+		//Pythagoras theorem
 		totalLength += sqrt( ( horizontalLength * horizontalLength ) + ( verticalLength * verticalLength ) );
 
-		previousPosition = currentPosition;
-		if ( distanceCovered + ( previousPosition + ( direction * stepSize ) ).GetLength() > totalHorizontalLength )
+		if ( distanceCovered >= distaceToCover )
 		{
-			currentPosition = previousPosition + ( direction * ( totalHorizontalLength - distanceCovered ) );
-			distanceCovered += ( totalHorizontalLength - distanceCovered );
+			break;
+		}
+
+		previousPosition = currentPosition;
+		if ( distanceCovered + (  direction * stepSize ).GetLength() > distaceToCover )
+		{
+			currentPosition = previousPosition + ( direction * ( distaceToCover - distanceCovered ) );
+			distanceCovered += ( distaceToCover - distanceCovered );
 		}
 		else
 		{
@@ -165,49 +175,57 @@ int main()
 	std::string preEruptionFilePath;
 	std::string postEruptionFilePath;
 
-	std::cout << "Enter the file path for pre eruption data"<<std::endl;
-	std::cin >> preEruptionFilePath;
-
 	size_t preEruptionOutSize;
-	void* preEruptionBuffer = FileReadToBuffer( preEruptionFilePath , &preEruptionOutSize );
+	void* preEruptionBuffer = nullptr;
+	do 
+	{
+		std::cout << "Enter the file path for pre eruption data" << std::endl;
+		std::cin >> preEruptionFilePath;
+		preEruptionBuffer = FileReadToBuffer( preEruptionFilePath , &preEruptionOutSize );
 
-	if ( preEruptionBuffer == nullptr )
-	{
-		std::cout << "Invalid file path for pre eruption" << std::endl;
-		return -1;
-	}
-	else if ( preEruptionOutSize != numRows * numColumns )
-	{
-		std::cout << "File size must be 512 * 512 bytes" << std::endl;
-		return -1;
-	}
-	else
-	{
-		std::cout << "Pre eruption file read successfully" << std::endl;
-	}
+		if ( preEruptionBuffer == nullptr )
+		{
+			std::cout << "Invalid file path for pre eruption" << std::endl;
+		}
+		else if ( preEruptionOutSize != numRows * numColumns )
+		{
+			std::cout << "File size must be 512 * 512 bytes" << std::endl;
+		}
+		else
+		{
+			std::cout << "Pre eruption file read successfully" << std::endl;
+		}
 
+	} while ( ( preEruptionBuffer == nullptr ) || ( preEruptionOutSize != numRows * numColumns ) );
+	
 	CopyDataFromBufferToArray( preEruptionData , preEruptionBuffer );
 
-	std::cout << "Enter the file path for post eruption data" << std::endl;
-	std::cin >> postEruptionFilePath;
-
 	size_t postEruptionOutSize;
-	void* postEruptionBuffer = FileReadToBuffer( postEruptionFilePath , &postEruptionOutSize );
+	void* postEruptionBuffer = nullptr;
 
-	if ( postEruptionBuffer == nullptr )
+	do 
 	{
-		std::cout << "Invalid file path for post eruption" << std::endl;
-		return -1;
-	}
-	else if ( postEruptionOutSize != numRows * numColumns )
-	{
-		std::cout << "File size must be 512 * 512 bytes" << std::endl;
-		return -1;
-	}
-	else
-	{
-		std::cout << "Post eruption file read successfully" << std::endl;
-	}
+		std::cout << "Enter the file path for post eruption data" << std::endl;
+		std::cin >> postEruptionFilePath;
+
+		postEruptionBuffer = FileReadToBuffer( postEruptionFilePath , &postEruptionOutSize );
+
+
+		if ( postEruptionBuffer == nullptr )
+		{
+			std::cout << "Invalid file path for post eruption" << std::endl;
+		}
+		else if ( postEruptionOutSize != numRows * numColumns )
+		{
+			std::cout << "File size must be 512 * 512 bytes" << std::endl;
+		}
+		else
+		{
+			std::cout << "Post eruption file read successfully" << std::endl;
+		}
+
+
+	} while ( ( postEruptionBuffer == nullptr ) || ( postEruptionOutSize != numRows * numColumns ) );
 	
 	CopyDataFromBufferToArray( postEruptionData , postEruptionBuffer );
 
@@ -216,18 +234,41 @@ int main()
 	int endPixelCoordX = -1;
 	int endPixelCoordY = -1;
 
-	std::cout << "Enter the start pixel coordinates" << std::endl;
-	std::cin >> startPixelCoordX >> startPixelCoordY;
+	do 
+	{
+		std::cout << "Enter the start pixel coordinates" << std::endl;
+		std::cin >> startPixelCoordX >> startPixelCoordY;
 
-	std::cout << "Enter the end pixel coordinates" << std::endl;
-	std::cin >> endPixelCoordX >> endPixelCoordY;
+		if ( !( startPixelCoordX >= 0 && startPixelCoordX < numRows && startPixelCoordY >= 0 && startPixelCoordY < numColumns ) )
+		{
+			std::cout << "Enter a valid coordinate"<<std::endl;
+		}
 
+	} while ( !( startPixelCoordX >= 0 && startPixelCoordX < numRows && startPixelCoordY >= 0 && startPixelCoordY < numColumns ) );
+
+	do 
+	{
+		std::cout << "Enter the end pixel coordinates" << std::endl;
+		std::cin >> endPixelCoordX >> endPixelCoordY;
+
+		if ( !( endPixelCoordX >= 0 && endPixelCoordX < numRows && endPixelCoordY >= 0 && endPixelCoordY < numColumns ) )
+		{
+			std::cout << "Enter a valid coordinate" << std::endl;
+		}
+
+	} while ( !( endPixelCoordX >= 0 && endPixelCoordX < numRows && endPixelCoordY >= 0 && endPixelCoordY < numColumns ) );
+	
 	float preEruptionSurfaceLength = GetSurfaceLength( preEruptionData , startPixelCoordX , startPixelCoordY , endPixelCoordX , endPixelCoordY );
 	float postEruptionSurfaceLength = GetSurfaceLength( postEruptionData , startPixelCoordX , startPixelCoordY , endPixelCoordX , endPixelCoordY );
 
-	printf( "The pre eruption surface lenght is %f meters \n",preEruptionSurfaceLength);
+	printf( "The pre eruption surface length is %f meters \n",preEruptionSurfaceLength);
 	printf( "The post eruption surface length is %f meters \n" , postEruptionSurfaceLength );
 	printf( "The difference is %f meters \n" , postEruptionSurfaceLength - preEruptionSurfaceLength );
+
+	// getch function was not working, so a temp hack just to show the results before program terminates
+	std::string temp;
+	std::cout << "Press any key and enter to exit"<<std::endl;
+	std::cin >> temp;
 
 	return 0;
 }
