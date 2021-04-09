@@ -48,10 +48,18 @@ struct Vec2
 
 	Vec2 GetNormalized() const
 	{
-		float theta = atan2( y , x );
-		float tempX = cos( theta );
-		float tempY = sin( theta );
-		return( Vec2( tempX , tempY ) );
+		float r = sqrt( ( x * x ) + ( y * y ) );
+		Vec2 temp = Vec2();
+
+		if ( r != 0.f )
+		{
+			float scale = 1.f / r;
+			temp.x = scale * x;
+			temp.y = scale * y;
+
+		}
+
+		return temp;
 	}
 
 	float GetLength() const
@@ -121,7 +129,7 @@ float GetSurfaceLength( unsigned char array[ numRows ][ numColumns ] , int start
 	Vec2 direction = distanceVec.GetNormalized();
 	float distaceToCover = distanceVec.GetLength();
 	float distanceCovered = 0.f;
-	float stepSize = 0.1f;
+	float stepSize = 1.f;
 
 	Vec2 previousPosition = startPosition;
 	Vec2 currentPosition = previousPosition + ( direction * stepSize );
@@ -129,6 +137,7 @@ float GetSurfaceLength( unsigned char array[ numRows ][ numColumns ] , int start
 	
 	while ( true )
 	{
+		
 		int previousPostionX = ( int ) previousPosition.x;
 		int previousPostionY = ( int ) previousPosition.y;
 
@@ -136,13 +145,14 @@ float GetSurfaceLength( unsigned char array[ numRows ][ numColumns ] , int start
 		int currentPositionY = ( int ) currentPosition.y;
 
 		unsigned int difference = abs( array[ currentPositionX ][ currentPositionY ] - array[ previousPostionX ][ previousPostionY ] );
-		float verticalLength = (float)(difference * heightPerUnit * stepSize);
+		float verticalLength = (float)(difference * heightPerUnit);
 		float horizontalLength = (currentPosition-previousPosition).GetLength() * lengthPerUnit;
 
 		//Pythagoras theorem
 		totalLength += sqrt( ( horizontalLength * horizontalLength ) + ( verticalLength * verticalLength ) );
 
-		if ( distanceCovered >= distaceToCover )
+		float nearZero = 0.001f;
+		if ( ( distaceToCover - distanceCovered ) <= nearZero )
 		{
 			break;
 		}
